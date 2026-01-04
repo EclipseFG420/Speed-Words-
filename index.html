@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Speed Words</title>
+<style>
+body{margin:0;background:#111;color:#fff;font-family:Arial;text-align:center}
+#word{font-size:48px;margin-top:150px}
+#input{font-size:24px;padding:10px;margin-top:20px}
+#stats{margin-top:20px}
+</style>
+</head>
+<body>
+
+<h1>Speed Words</h1>
+<div id="word">ready</div>
+<input id="input" autofocus autocomplete="off">
+<div id="stats">
+Очки: <span id="score">0</span><br>
+Время: <span id="time">30</span>
+</div>
+
+<script>
+let words=["apple","speed","legend","sword","enemy","keyboard","javascript","coding","battle","dragon"];
+let current="";
+let score=0;
+let time=30;
+
+function newWord(){
+ current=words[Math.floor(Math.random()*words.length)];
+ document.getElementById("word").innerText=current;
+}
+
+newWord();
+
+let timer=setInterval(()=>{
+ time--;
+ document.getElementById("time").innerText=time;
+ if(time<=0){
+  clearInterval(timer);
+  alert("Игра окончена! Очки: "+score);
+  location.reload();
+ }
+},1000);
+
+document.getElementById("input").addEventListener("input",e=>{
+ if(e.target.value===current){
+  score++;
+  document.getElementById("score").innerText=score;
+  e.target.value="";
+  newWord();
+ }
+});
+</script>
+
+</body>
+</html>
