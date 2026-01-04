@@ -2,46 +2,97 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Speed Words</title>
+<title>Speed Words Online</title>
 <style>
-body{margin:0;background:#111;color:#fff;font-family:Arial;text-align:center}
-#word{font-size:48px;margin-top:150px}
-#input{font-size:24px;padding:10px;margin-top:20px}
-#stats{margin-top:20px}
+body{margin:0;font-family:Arial;background:#111;color:white;text-align:center}
+input,button{padding:10px;font-size:18px;margin:5px}
+#game,#menu,#login,#leaderboard{display:none}
+#word{font-size:40px;margin:20px}
 </style>
 </head>
 <body>
 
-<h1>Speed Words</h1>
-<div id="word">ready</div>
-<input id="input" autofocus autocomplete="off">
-<div id="stats">
-Очки: <span id="score">0</span><br>
-Время: <span id="time">30</span>
+<h1>Speed Words Online</h1>
+
+<div id="login">
+<h2>Вход / Регистрация</h2>
+<input id="username" placeholder="Никнейм">
+<button onclick="login()">Войти</button>
+</div>
+
+<div id="menu">
+<h2>Привет, <span id="userLabel"></span></h2>
+<button onclick="startGame()">Играть</button>
+<button onclick="showLeaders()">Таблица рекордов</button>
+<button onclick="logout()">Выйти</button>
+</div>
+
+<div id="game">
+<div id="word"></div>
+<input id="input" autocomplete="off">
+<p>Очки: <span id="score">0</span></p>
+<p>Время: <span id="time">60</span></p>
+</div>
+
+<div id="leaderboard">
+<h2>Рекорды</h2>
+<ul id="leaders"></ul>
+<button onclick="backMenu()">Назад</button>
 </div>
 
 <script>
-let words=["apple","speed","legend","sword","enemy","keyboard","javascript","coding","battle","dragon"];
-let current="";
-let score=0;
-let time=30;
+let wordsEasy=["cat","dog","sun","car","milk","code","fast","win","play","key"];
+let wordsHard=["javascript","championship","programming","keyboardmaster",
+"competition","performance","development","international","difficulty","experience"];
+
+let words=[...wordsEasy,...wordsHard];
+
+let user=null,score=0,time=60,current="";
+
+function login(){
+ let name=document.getElementById("username").value;
+ if(!name) return alert("Введите ник!");
+ user=name;
+ localStorage.setItem("user",user);
+ showMenu();
+}
+
+function logout(){
+ localStorage.removeItem("user");
+ location.reload();
+}
+
+function showMenu(){
+ document.getElementById("login").style.display="none";
+ document.getElementById("menu").style.display="block";
+ document.getElementById("userLabel").innerText=user;
+}
 
 function newWord(){
  current=words[Math.floor(Math.random()*words.length)];
  document.getElementById("word").innerText=current;
 }
 
-newWord();
+function startGame(){
+ score=0; time=60;
+ document.getElementById("menu").style.display="none";
+ document.getElementById("game").style.display="block";
+ document.getElementById("score").innerText=0;
+ document.getElementById("time").innerText=60;
+ newWord();
+ document.getElementById("input").value="";
+ document.getElementById("input").focus();
 
-let timer=setInterval(()=>{
- time--;
- document.getElementById("time").innerText=time;
- if(time<=0){
-  clearInterval(timer);
-  alert("Игра окончена! Очки: "+score);
-  location.reload();
- }
-},1000);
+ let timer=setInterval(()=>{
+  time--;
+  document.getElementById("time").innerText=time;
+  if(time<=0){
+   clearInterval(timer);
+   saveScore();
+   backMenu();
+  }
+ },1000);
+}
 
 document.getElementById("input").addEventListener("input",e=>{
  if(e.target.value===current){
@@ -51,7 +102,39 @@ document.getElementById("input").addEventListener("input",e=>{
   newWord();
  }
 });
-</script>
 
+function saveScore(){
+ let table=JSON.parse(localStorage.getItem("leaders")||"{}");
+ if(!table[user] || score>table[user]) table[user]=score;
+ localStorage.setItem("leaders",JSON.stringify(table));
+}
+
+function showLeaders(){
+ document.getElementById("menu").style.display="none";
+ document.getElementById("leaderboard").style.display="block";
+ let list=document.getElementById("leaders");
+ list.innerHTML="";
+ let table=JSON.parse(localStorage.getItem("leaders")||"{}");
+ let sorted=Object.entries(table).sort((a,b)=>b[1]-a[1]);
+ sorted.forEach(u=>{
+  let li=document.createElement("li");
+  li.innerText=u[0]+" — "+u[1];
+  list.appendChild(li);
+ });
+}
+
+function backMenu(){
+ document.getElementById("game").style.display="none";
+ document.getElementById("leaderboard").style.display="none";
+ showMenu();
+}
+
+if(localStorage.getItem("user")){
+ user=localStorage.getItem("user");
+ showMenu();
+}else{
+ document.getElementById("login").style.display="block";
+}
+</script>
 </body>
 </html>
