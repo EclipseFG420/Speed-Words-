@@ -2,156 +2,160 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Speed Words Championship</title>
+<title>Speed Words Online</title>
 <style>
-body{margin:0;background:#0b0b0b;color:white;font-family:Arial;text-align:center}
+body{margin:0;font-family:Arial;background:#111;color:white;text-align:center}
 input,button{padding:10px;font-size:18px;margin:5px;border-radius:6px}
-#login,#menu,#game,#leaderboard{display:none}
-#word{font-size:38px;margin:20px;color:#00ff99}
-.rank{color:gold}
+#auth,#menu,#game,#leaders{display:none}
+#word{font-size:36px;margin:20px;color:#00ff99}
 </style>
 </head>
 <body>
 
-<h1>Speed Words Championship</h1>
+<h1>⚡ SPEED WORDS</h1>
 
-<div id="login">
-<h2>Регистрация / Вход</h2>
-<input id="user" placeholder="Логин"><br>
-<input id="pass" type="password" placeholder="Пароль"><br>
-<button onclick="login()">Войти / Зарегистрироваться</button>
+<div id="auth">
+  <input id="email" placeholder="Email"><br>
+  <input id="password" type="password" placeholder="Пароль"><br>
+  <button onclick="register()">Регистрация</button>
+  <button onclick="login()">Войти</button>
+  <p id="authMsg"></p>
 </div>
 
 <div id="menu">
-<h2>Игрок: <span id="uName"></span></h2>
-<h3>Звание: <span id="rank" class="rank"></span></h3>
-<button onclick="startGame()">▶ Играть</button>
-<button onclick="showLeaders()">🏆 Рекорды</button>
-<button onclick="logout()">🚪 Выйти</button>
+  <h3>Вы вошли как: <span id="userLabel"></span></h3>
+  <button onclick="startGame()">▶ Играть</button>
+  <button onclick="loadLeaders()">🏆 Таблица рекордов</button>
+  <button onclick="logout()">🚪 Выйти</button>
 </div>
 
 <div id="game">
-<div id="word"></div>
-<input id="input">
-<p>Очки: <span id="score">0</span></p>
-<p>Время: <span id="time">60</span></p>
+  <p>⏱ Время: <span id="time">60</span></p>
+  <div id="word"></div>
+  <input id="input" autocomplete="off">
+  <p>Очки: <span id="score">0</span></p>
 </div>
 
-<div id="leaderboard">
-<h2>Таблица чемпионов</h2>
-<ul id="leaders"></ul>
-<button onclick="backMenu()">Назад</button>
+<div id="leaders">
+  <h2>🏆 Лидеры</h2>
+  <ul id="leadersList"></ul>
+  <button onclick="backMenu()">Назад</button>
 </div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <script>
-let easy=["cat","dog","sun","milk","key","play","run","win","code","fast"];
-let hard=["championship","keyboardmaster","javascript","performance",
-"competition","international","development","difficulty","experience","programming"];
-let words=[...easy,...hard];
+const firebaseConfig = {
+  apiKey: "AIzaSyBAr5YXP3JqzP_6afXsht41Td8uT9lwThE",
+  authDomain: "speed-words-83e87.firebaseapp.com",
+  projectId: "speed-words-83e87",
+  storageBucket: "speed-words-83e87.firebasestorage.app",
+  messagingSenderId: "517638541436",
+  appId: "1:517638541436:web:a1bddb2ee9073ce80fb9f9"
+};
 
-let user=null,score=0,time=60,current="";
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+</script>
 
-function getRank(s){
- if(s>=50) return "Легенда ⛩";
- if(s>=30) return "Мастер клавиатуры";
- if(s>=20) return "Скоростной";
- if(s>=10) return "Печатник";
- return "Новичок";
+<script>
+let wordsEasy=["cat","dog","sun","milk","key","play","win","run","box","code"];
+let wordsHard=["javascript","championship","keyboardmaster","performance","competition","international","development","difficulty","experience","programming"];
+let words=[...wordsEasy,...wordsHard];
+
+let score=0,time=60,currentWord="";
+let timer=null;
+
+function show(id){
+ ["auth","menu","game","leaders"].forEach(x=>document.getElementById(x).style.display="none");
+ document.getElementById(id).style.display="block";
+}
+
+function register(){
+ auth.createUserWithEmailAndPassword(email.value,password.value)
+ .then(()=>authMsg.innerText="Аккаунт создан!")
+ .catch(e=>authMsg.innerText=e.message);
 }
 
 function login(){
- let u=document.getElementById("user").value;
- let p=document.getElementById("pass").value;
- if(!u||!p) return alert("Введите логин и пароль!");
-
- let db=JSON.parse(localStorage.getItem("accounts")||"{}");
-
- if(db[u]){
-  if(db[u].pass!==p) return alert("Неверный пароль!");
- }else{
-  db[u]={pass:p,record:0};
-  localStorage.setItem("accounts",JSON.stringify(db));
- }
-
- user=u;
- localStorage.setItem("session",u);
- showMenu();
+ auth.signInWithEmailAndPassword(email.value,password.value)
+ .catch(e=>authMsg.innerText=e.message);
 }
 
-function showMenu(){
- document.getElementById("login").style.display="none";
- document.getElementById("menu").style.display="block";
- document.getElementById("uName").innerText=user;
- let db=JSON.parse(localStorage.getItem("accounts"));
- document.getElementById("rank").innerText=getRank(db[user].record);
-}
+auth.onAuthStateChanged(user=>{
+ if(user){
+  userLabel.innerText=user.email;
+  show("menu");
+ }else show("auth");
+});
 
-function logout(){
- localStorage.removeItem("session");
- location.reload();
-}
+function logout(){auth.signOut();}
 
 function newWord(){
- current=words[Math.floor(Math.random()*words.length)];
- document.getElementById("word").innerText=current;
+ currentWord=words[Math.floor(Math.random()*words.length)];
+ word.innerText=currentWord;
+ input.value="";
+ input.focus();
 }
 
-function startGame(){
- score=0; time=60;
- document.getElementById("menu").style.display="none";
- document.getElementById("game").style.display="block";
- document.getElementById("input").value="";
- document.getElementById("input").focus();
- newWord();
-
- let timer=setInterval(()=>{
-  time--;
-  document.getElementById("time").innerText=time;
-  if(time<=0){
-   clearInterval(timer);
-   saveScore();
-   backMenu();
-  }
- },1000);
-}
-
-document.getElementById("input").addEventListener("input",e=>{
- if(e.target.value===current){
+input.addEventListener("input",()=>{
+ if(input.value===currentWord){
   score++;
-  document.getElementById("score").innerText=score;
-  e.target.value="";
+  scoreEl.innerText=score;
   newWord();
  }
 });
 
-function saveScore(){
- let db=JSON.parse(localStorage.getItem("accounts"));
- if(score>db[user].record) db[user].record=score;
- localStorage.setItem("accounts",JSON.stringify(db));
+const scoreEl=document.getElementById("score");
+
+function startGame(){
+ score=0;time=60;
+ scoreEl.innerText=0;
+ timeEl.innerText=60;
+ show("game");
+ newWord();
+
+ timer=setInterval(()=>{
+  time--;
+  timeEl.innerText=time;
+  if(time<=0){
+   clearInterval(timer);
+   saveScore();
+   show("menu");
+  }
+ },1000);
 }
 
-function showLeaders(){
- document.getElementById("menu").style.display="none";
- document.getElementById("leaderboard").style.display="block";
- let list=document.getElementById("leaders");
- list.innerHTML="";
- let db=JSON.parse(localStorage.getItem("accounts"));
- let sorted=Object.entries(db).sort((a,b)=>b[1].record-a[1].record);
- sorted.forEach(p=>{
-  let li=document.createElement("li");
-  li.innerText=`${p[0]} — ${p[1].record} (${getRank(p[1].record)})`;
-  list.appendChild(li);
+const timeEl=document.getElementById("time");
+
+function saveScore(){
+ db.collection("scores").add({
+  user: auth.currentUser.email,
+  score: score,
+  date: Date.now()
  });
 }
 
-function backMenu(){
- document.getElementById("game").style.display="none";
- document.getElementById("leaderboard").style.display="none";
- showMenu();
+function loadLeaders(){
+ leadersList.innerHTML="";
+ db.collection("scores").orderBy("score","desc").limit(10).get()
+ .then(snap=>{
+  snap.forEach(doc=>{
+   let li=document.createElement("li");
+   let d=doc.data();
+   li.innerText=d.user+" — "+d.score;
+   leadersList.appendChild(li);
+  });
+ });
+ show("leaders");
 }
 
-let s=localStorage.getItem("session");
-if(s){user=s;showMenu();}else{document.getElementById("login").style.display="block";}
+function backMenu(){show("menu");}
 </script>
+
 </body>
 </html>
